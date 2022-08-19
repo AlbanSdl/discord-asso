@@ -6,7 +6,7 @@ Bienvenue sur la page du bot discord associatif de l'UTT ! Grâce à lui, tu obt
 
 ### Le ban associatif
 
-Le serveur asso est conçu pour fonctionner sans admins, avec des gens égaux _(même si UNG > all)_. Du coup en cas de besoin, il existe une commande `/ban` et `/kick` (cf. l'autocomplétion pour voir l'usage de la commande). Cela lance un vote: au bout de 15 _oui_ l'utilisateur est ban (un seul votre _non_ suffit pour supprimer le vote. On ne peut alors pas relancer de vote pour cette personne pendant 24h - les abus bonjour). Il faudra 5 votes pour un kick.
+Le serveur asso est conçu pour fonctionner sans admins, avec des gens égaux _(même si UNG > all)_. Du coup en cas de besoin, il existe une commande `/ban` et `/kick` (cf. l'autocomplétion pour voir l'usage de la commande). Cela lance un vote: au bout de 15 _oui_ l'utilisateur est ban (un seul votre _non_ suffit pour supprimer le vote. On ne peut alors pas relancer de vote pour cette personne pendant 24h - les abus bonjour). Il faudra 5 votes pour un kick. L'utilisateur contre lequel le ban/kick est voté n'a pas la possibilité de voter (ni les utilisateurs qui ne sont pas dans des assos).
 
 ### Adpete de la salle asso
 

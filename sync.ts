@@ -10,6 +10,34 @@ import {
 import { bot } from "./src/discord";
 import { fetchMembers } from "./src/etu";
 
+const enum RoleType {
+  BUREAU,
+  MEMBRE,
+  ANCIEN,
+}
+
+function getRoleName(asso: string, roleType: RoleType) {
+  switch (roleType) {
+    case RoleType.BUREAU:
+      return `${asso} - Bureau`;
+    case RoleType.ANCIEN:
+      return `${asso} - Ancien`;
+    default:
+      return asso;
+  }
+}
+
+function getRoleColor(roleType: RoleType) {
+  switch (roleType) {
+    case RoleType.BUREAU:
+      return process.env.ROLE_BUREAU_COLOR;
+    case RoleType.ANCIEN:
+      return process.env.ROLE_ANCIEN_COLOR;
+    default:
+      return process.env.ROLE_MEMBRE_COLOR;
+  }
+}
+
 async function findAssoCategory(guild: Guild, asso: string) {
   return (guild.channels.cache.find(
     (channel) =>
@@ -26,6 +54,59 @@ async function findAssoCategory(guild: Guild, asso: string) {
         },
       ],
     })) as CategoryChannel;
+}
+
+function filterRolesByType(guild: Guild, roleType: RoleType) {
+  switch (roleType) {
+    case RoleType.ANCIEN:
+      return guild.roles.cache.filter((role) => role.name.endsWith("Ancien"));
+    case RoleType.BUREAU:
+      return guild.roles.cache.filter((role) => role.name.endsWith("Bureau"));
+    default:
+      return guild.roles.cache.filter(
+        (role) => !role.name.endsWith("Ancien") && !role.name.endsWith("Bureau")
+      );
+  }
+}
+
+function findNextRolePosition(guild: Guild, asso: string, roleType: RoleType) {
+  const roles = filterRolesByType(guild, roleType);
+  if (roles.size) {
+    const sortedRoles = roles.sort((role1, role2) =>
+      role1.name.localeCompare(role2.name)
+    );
+    for (const role of sortedRoles) {
+      if (role[1].name > asso) return role[1].position + 1;
+    }
+    return sortedRoles.last()!.position;
+  }
+
+  // Find where the first role should be located
+  if (roleType === RoleType.ANCIEN) return 1;
+  if (roleType === RoleType.MEMBRE)
+    return (
+      (filterRolesByType(guild, RoleType.ANCIEN).first()?.position ?? 0) + 1
+    );
+  return (
+    (filterRolesByType(guild, RoleType.MEMBRE).first()?.position ??
+      filterRolesByType(guild, RoleType.ANCIEN).first()?.position ??
+      0) + 1
+  );
+}
+
+async function findAssoRole(guild: Guild, asso: string, roleType: RoleType) {
+  return (
+    guild.roles.cache.find(
+      (role) => role.name === getRoleName(asso, roleType)
+    ) ??
+    (await guild.roles.create({
+      name: getRoleName(asso, roleType),
+      mentionable: true,
+      color: Number(`0x${getRoleColor(roleType)}`),
+      hoist: roleType === RoleType.BUREAU,
+      position: findNextRolePosition(guild, asso, roleType),
+    }))
+  );
 }
 
 export async function syncRoles() {
@@ -53,27 +134,11 @@ export async function syncRoles() {
           switch (assoMember[asso].toLowerCase()) {
             case "ancien":
             case "anciens":
-              const ancienRole =
-                guild.roles.cache.find(
-                  (role) => role.name === `${asso} - Ancien`
-                ) ??
-                (await guild.roles.create({
-                  name: `${asso} - Ancien`,
-                  mentionable: true,
-                  reason: `Création du rôle Ancien pour ${asso}: ${discordTag} fait partie des anciens de l'asso`,
-                  color: Number(`0x${process.env.ROLE_ANCIEN_COLOR}`),
-                  hoist: false,
-                  position:
-                    (
-                      guild.roles.cache
-                        .filter((role) => role.name.endsWith("Ancien"))
-                        .sorted((a, b) => a.position - b.position)
-                        .last() ??
-                      guild.roles.cache
-                        .sorted((a, b) => a.position - b.position)
-                        .last()!
-                    ).position - 1,
-                }));
+              const ancienRole = await findAssoRole(
+                guild,
+                asso,
+                RoleType.ANCIEN
+              );
               roles.push(ancienRole);
               // Create channels if they don't exist
               const ancien_category = await findAssoCategory(guild, asso);
@@ -86,24 +151,11 @@ export async function syncRoles() {
               }
               break;
             case "bureau":
-              const bureauRole =
-                guild.roles.cache.find(
-                  (role) => role.name === `${asso} - Bureau`
-                ) ??
-                (await guild.roles.create({
-                  name: `${asso} - Bureau`,
-                  mentionable: true,
-                  reason: `Création du rôle Bureau pour ${asso}: ${discordTag} fait partie du bureau`,
-                  color: Number(`0x${process.env.ROLE_BUREAU_COLOR}`),
-                  hoist: true,
-                  position:
-                    (
-                      guild.roles.cache
-                        .filter((role) => role.name.endsWith("Bureau"))
-                        .sorted((a, b) => a.position - b.position)
-                        .last() ?? { position: guild.roles.cache.size }
-                    ).position - 1,
-                }));
+              const bureauRole = await findAssoRole(
+                guild,
+                asso,
+                RoleType.BUREAU
+              );
               roles.push(bureauRole);
               // Create channels if they don't exist
               const category = await findAssoCategory(guild, asso);
@@ -117,23 +169,11 @@ export async function syncRoles() {
                 });
               }
             default:
-              const memberRole =
-                guild.roles.cache.find((role) => role.name === asso) ??
-                (await guild.roles.create({
-                  name: asso,
-                  mentionable: true,
-                  reason: `Création du rôle Membre pour ${asso}: ${discordTag} fait partie de l'asso`,
-                  color: Number(`0x${process.env.ROLE_MEMBRE_COLOR}`),
-                  hoist: false,
-                  position:
-                    guild.roles.cache
-                      .filter((role) => role.name.endsWith("Ancien"))
-                      .sorted((a, b) => a.position - b.position)
-                      .first()?.position ??
-                    guild.roles.cache
-                      .sorted((a, b) => a.position - b.position)
-                      .last()!.position - 1,
-                }));
+              const memberRole = await findAssoRole(
+                guild,
+                asso,
+                RoleType.MEMBRE
+              );
               roles.push(memberRole);
               // Create channels if they don't exist
               const assoCategory = await findAssoCategory(guild, asso);

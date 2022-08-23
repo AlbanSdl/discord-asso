@@ -11,5 +11,9 @@
   },
   "devDependencies": {
     "typescript": "^4.7.4"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/src/index.js"
   }
 }

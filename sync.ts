@@ -94,11 +94,11 @@ function findNextRolePosition(guild: Guild, asso: string, roleType: RoleType) {
   if (roleType === RoleType.ANCIEN) return 1;
   if (roleType === RoleType.MEMBRE)
     return (
-      (filterRolesByType(guild, RoleType.ANCIEN).first()?.position ?? 0) + 1
+      (filterRolesByType(guild, RoleType.ANCIEN).last()?.position ?? 0) + 1
     );
   return (
-    (filterRolesByType(guild, RoleType.MEMBRE).first()?.position ??
-      filterRolesByType(guild, RoleType.ANCIEN).first()?.position ??
+    (filterRolesByType(guild, RoleType.MEMBRE).last()?.position ??
+      filterRolesByType(guild, RoleType.ANCIEN).last()?.position ??
       0) + 1
   );
 }
@@ -133,14 +133,13 @@ export async function syncRoles() {
     );
   } while (members.size < guild.memberCount);
 
-  members.forEach(async (member) => {
+  for (const [_, member] of members) {
     if (!member.user.bot) {
       const discordTag = `${member.user.username}#${member.user.discriminator}`;
       const roles: Role[] = [];
       if (discordTag in assoMembers) {
         const assoMember = assoMembers[discordTag];
         for (const asso in assoMember) {
-          let role: Role | null = null;
           switch (assoMember[asso].toLowerCase()) {
             case "ancien":
             case "anciens":
@@ -159,7 +158,10 @@ export async function syncRoles() {
                   ViewChannel: true,
                 });
               }
-              role = ancienRole;
+              await member.roles.add(
+                ancienRole,
+                "Synchronisation des rôles (via site étu)"
+              );
               break;
             case "bureau":
               const bureauRole = await findAssoRole(
@@ -179,7 +181,10 @@ export async function syncRoles() {
                   ManageRoles: true,
                 });
               }
-              role = bureauRole;
+              await member.roles.add(
+                bureauRole,
+                "Synchronisation des rôles (via site étu)"
+              );
             default:
               const memberRole = await findAssoRole(
                 guild,
@@ -194,10 +199,11 @@ export async function syncRoles() {
                   ViewChannel: true,
                 });
               }
-              role = memberRole;
+              await member.roles.add(
+                memberRole,
+                "Synchronisation des rôles (via site étu)"
+              );
           }
-          if (role)
-            member.roles.add(role, "Synchronisation des rôles (via site étu)");
         }
         console.log(
           discordTag,
@@ -211,5 +217,5 @@ export async function syncRoles() {
         });
       }
     }
-  });
+  }
 }

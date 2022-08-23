@@ -1,10 +1,19 @@
-import { Client, TextChannel } from "discord.js";
-import { syncRoles } from "../../sync";
+import { ActivityType, Client, TextChannel } from "discord.js";
+import { syncRoles } from "./sync";
 import { banUser, banUserUpdate } from "./ban";
 import { generateErrorMessage, generateFatalErrorMessage } from "./error";
 
 export const bot = new Client({
   intents: ["Guilds", "GuildMembers"],
+  presence: {
+    status: "online",
+    activities: [
+      {
+        name: "EtuUTT",
+        type: ActivityType.Listening,
+      },
+    ],
+  },
 });
 
 bot.on("interactionCreate", async (interaction) => {

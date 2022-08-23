@@ -92,10 +92,12 @@ async function fetchAssos(): Promise<EtuUTTOrga[]> {
   const listorgas = await api.get<{ data: { name: string; login: string }[] }>(
     `${process.env.ETU_UTT_ENDPOINT}/api/public/listorgas`
   );
-  return listorgas.data.data.map((asso) => ({
-    name: asso.name,
-    id: asso.login,
-  }));
+  return listorgas.data.data
+    .map((asso) => ({
+      name: asso.name,
+      id: asso.login,
+    }))
+    .filter((asso) => !/^(?:E|É)lus?\s/iu.test(asso.name));
 }
 
 /**

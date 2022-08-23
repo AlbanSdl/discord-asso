@@ -140,6 +140,7 @@ export async function syncRoles() {
       if (discordTag in assoMembers) {
         const assoMember = assoMembers[discordTag];
         for (const asso in assoMember) {
+          let role: Role | null = null;
           switch (assoMember[asso].toLowerCase()) {
             case "ancien":
             case "anciens":
@@ -158,6 +159,7 @@ export async function syncRoles() {
                   ViewChannel: true,
                 });
               }
+              role = ancienRole;
               break;
             case "bureau":
               const bureauRole = await findAssoRole(
@@ -177,6 +179,7 @@ export async function syncRoles() {
                   ManageRoles: true,
                 });
               }
+              role = bureauRole;
             default:
               const memberRole = await findAssoRole(
                 guild,
@@ -191,7 +194,10 @@ export async function syncRoles() {
                   ViewChannel: true,
                 });
               }
+              role = memberRole;
           }
+          if (role)
+            member.roles.add(role, "Synchronisation des rôles (via site étu)");
         }
         console.log(
           discordTag,
@@ -199,8 +205,6 @@ export async function syncRoles() {
         );
         for (const role of member.roles.cache)
           if (!roles.find((r) => r.id === role[0])) member.roles.remove(role);
-        for (const role of roles)
-          member.roles.add(role, "Synchronisation des rôles (via site étu)");
       } else {
         member.roles.cache.forEach((role) => {
           if (role.editable) member.roles.remove(role);

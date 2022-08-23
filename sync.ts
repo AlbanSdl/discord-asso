@@ -59,20 +59,22 @@ async function findAssoCategory(guild: Guild, asso: string) {
 function filterRolesByType(guild: Guild, roleType: RoleType) {
   switch (roleType) {
     case RoleType.ANCIEN:
-      return guild.roles.cache.filter(
-        (role) => role.name.endsWith("Ancien") && !role.managed
-      );
+      return guild.roles.cache
+        .filter((role) => role.name.endsWith("Ancien") && !role.managed)
+        .sort((role1, role2) => role1.position - role2.position);
     case RoleType.BUREAU:
-      return guild.roles.cache.filter(
-        (role) => role.name.endsWith("Bureau") && !role.managed
-      );
+      return guild.roles.cache
+        .filter((role) => role.name.endsWith("Bureau") && !role.managed)
+        .sort((role1, role2) => role1.position - role2.position);
     default:
-      return guild.roles.cache.filter(
-        (role) =>
-          !role.name.endsWith("Ancien") &&
-          !role.name.endsWith("Bureau") &&
-          !role.managed
-      );
+      return guild.roles.cache
+        .filter(
+          (role) =>
+            !role.name.endsWith("Ancien") &&
+            !role.name.endsWith("Bureau") &&
+            !role.managed
+        )
+        .sort((role1, role2) => role1.position - role2.position);
   }
 }
 

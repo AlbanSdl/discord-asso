@@ -1,7 +1,7 @@
 import { ActivityType, Client, GuildMember, TextChannel } from "discord.js";
 import { syncRoles } from "./sync";
 import { generateErrorMessage, generateFatalErrorMessage } from "./error";
-import { toggleView } from "./access";
+import { buildModal, toggleView } from "./access";
 import { updateToggleMessage } from "./updateCommand";
 
 export const bot = new Client({
@@ -32,8 +32,11 @@ bot.on("interactionCreate", async (interaction) => {
             });
             break;
           case "update-command":
+            await interaction.deferReply({
+              ephemeral: true,
+            });
             await updateToggleMessage(interaction.channel);
-            interaction.deferReply();
+            interaction.editReply("Message envoyé");
             break;
           default:
             await interaction.deferReply({
@@ -61,10 +64,27 @@ bot.on("interactionCreate", async (interaction) => {
         )
       );
     }
-  } else if (interaction.isSelectMenu()) {
-    if (interaction.customId === "toggle-view") {
-      await toggleView(interaction.member as GuildMember, interaction.values);
-      interaction.deferUpdate();
+  } else if (interaction.isButton()) {
+    if (interaction.customId === "toggle-asso-popup") {
+      interaction.showModal(buildModal());
+    }
+  } else if (interaction.isModalSubmit()) {
+    if (interaction.customId === "toggle-asso") {
+      await interaction.deferReply({
+        ephemeral: true,
+      });
+      const asso = interaction.fields.getTextInputValue("asso-name");
+      const executed = await toggleView(
+        interaction.member as GuildMember,
+        asso
+      );
+      await interaction.editReply(
+        executed
+          ? `Tu viens de ${
+              executed.event === "joined" ? "rejoindre" : "quitter"
+            } les channels de *${executed.asso.name}*`
+          : `L'asso *${asso}* n'existe pas !`
+      );
     }
   }
 });

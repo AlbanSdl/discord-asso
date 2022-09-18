@@ -81,7 +81,7 @@ async function login(): Promise<EtuUTTCredentials> {
  * Retrieves the list of all organizations (and their id/login)
  * @returns {Promise<EtuUTTOrga[]>} List of all orga
  */
-async function fetchAssos(): Promise<EtuUTTOrga[]> {
+export async function fetchAssos(): Promise<EtuUTTOrga[]> {
   const token = await login();
   api = axios.create({
     headers: {

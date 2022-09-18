@@ -1,9 +1,5 @@
 // Load the .env file
-import {
-  SlashCommandBuilder,
-  SlashCommandStringOption,
-  SlashCommandUserOption,
-} from "@discordjs/builders";
+import { SlashCommandBuilder } from "@discordjs/builders";
 import { REST } from "@discordjs/rest";
 import { Routes } from "discord-api-types/v10";
 import { config } from "dotenv";
@@ -13,23 +9,13 @@ config();
 // List Commands
 const commands = [
   new SlashCommandBuilder()
-    .setName("ban")
-    .setDescription("Démarre un vote pour bannir un utilisateur")
-    .addUserOption(
-      new SlashCommandUserOption()
-        .setName("target")
-        .setDescription("L'utilisateur à bannir")
-        .setRequired(true)
-    )
-    .addStringOption(
-      new SlashCommandStringOption()
-        .setName("reason")
-        .setDescription("Raison du bannissement")
-        .setRequired(false)
-    ),
-  new SlashCommandBuilder()
     .setName("sync")
     .setDescription("Effectue la synchronisation des rôles sur le serveur"),
+  new SlashCommandBuilder()
+    .setName("update-command")
+    .setDescription(
+      "Met à jour/Crée le message pour voir les channels des assos"
+    ),
 ].map((command) => command.toJSON());
 
 // Register Commands

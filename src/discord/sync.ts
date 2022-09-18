@@ -38,7 +38,7 @@ function getRoleColor(roleType: RoleType) {
   }
 }
 
-async function findAssoCategory(guild: Guild, asso: string) {
+export async function findAssoCategory(guild: Guild, asso: string) {
   return (guild.channels.cache.find(
     (channel) =>
       channel.type === ChannelType.GuildCategory && channel.name === asso

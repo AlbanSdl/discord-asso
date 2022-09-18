@@ -1,7 +1,8 @@
-import { ActivityType, Client, TextChannel } from "discord.js";
+import { ActivityType, Client, GuildMember, TextChannel } from "discord.js";
 import { syncRoles } from "./sync";
-import { banUser, banUserUpdate } from "./ban";
 import { generateErrorMessage, generateFatalErrorMessage } from "./error";
+import { toggleView } from "./access";
+import { updateToggleMessage } from "./updateCommand";
 
 export const bot = new Client({
   intents: ["Guilds", "GuildMembers"],
@@ -21,14 +22,6 @@ bot.on("interactionCreate", async (interaction) => {
     if (interaction.channel instanceof TextChannel && interaction.inGuild()) {
       try {
         switch (interaction.commandName) {
-          case "ban":
-            await interaction.deferReply({
-              ephemeral: false,
-            });
-            banUser(interaction);
-            break;
-          case "kick":
-            break;
           case "sync":
             await interaction.deferReply({
               ephemeral: true,
@@ -37,6 +30,10 @@ bot.on("interactionCreate", async (interaction) => {
             interaction.editReply({
               content: "Synchronisation effectuée.",
             });
+            break;
+          case "update-command":
+            await updateToggleMessage(interaction.channel);
+            interaction.deferReply();
             break;
           default:
             await interaction.deferReply({
@@ -64,8 +61,11 @@ bot.on("interactionCreate", async (interaction) => {
         )
       );
     }
-  } else if (interaction.isButton()) {
-    if (interaction.customId.startsWith("ban_")) banUserUpdate(interaction);
+  } else if (interaction.isSelectMenu()) {
+    if (interaction.customId === "toggle-view") {
+      await toggleView(interaction.member as GuildMember, interaction.values);
+      interaction.deferUpdate();
+    }
   }
 });
 

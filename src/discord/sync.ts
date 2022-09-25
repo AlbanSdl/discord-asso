@@ -47,28 +47,45 @@ function getRoleColor(roleType: RoleType) {
   }
 }
 
+function findNextCategoryPosition(guild: Guild, asso: string) {
+  const categories = (
+    guild.channels.cache.filter(
+      (chan) => chan.type === ChannelType.GuildCategory
+    ) as Collection<string, CategoryChannel>
+  ).sort((chan1, chan2) => chan2.position - chan1.position);
+  if (categories.size) {
+    let previousCategory: CategoryChannel | null;
+    for (const cat of categories) {
+      if (
+        previousCategory &&
+        cat[1].name.localeCompare(previousCategory.name) > 0
+      )
+        break; // We reached pinned categories (such as BDE or UNG, break here)
+
+      previousCategory = cat[1]; // Add this category to check for pinned roles
+      if (cat[1].name.localeCompare(asso) < 0) return cat[1].position + 1; // We should be there
+    }
+    return previousCategory.position; // Use position right before pinned categories
+  }
+  return undefined;
+}
+
 /**
  * Retrieves (and creates if it doesn't exist) the category of the association
  * @param guild the guild to use for channel discovery
  * @param asso the name of the association
  * @returns The category of the association
  */
-export async function findAssoCategory(guild: Guild, asso: string) {
-  return (guild.channels.cache.find(
+async function findAssoCategory(guild: Guild, asso: string) {
+  let cat = guild.channels.cache.find(
     (channel) =>
       channel.type === ChannelType.GuildCategory && channel.name === asso
-  ) ??
-    guild.channels.create({
+  ) as CategoryChannel;
+  if (!cat) {
+    const pos = findNextCategoryPosition(guild, asso);
+    cat = await guild.channels.create({
       name: asso,
       type: ChannelType.GuildCategory,
-      position: (
-        guild.channels.cache
-          .filter((chan) => chan.type === ChannelType.GuildCategory)
-          .sort((chan1, chan2) => chan1.name.localeCompare(chan2.name))
-          .find(
-            (channel) => channel.name.localeCompare(asso) > 0
-          ) as CategoryChannel
-      )?.position,
       permissionOverwrites: [
         {
           type: OverwriteType.Role,
@@ -76,14 +93,17 @@ export async function findAssoCategory(guild: Guild, asso: string) {
           deny: ["ViewChannel"],
         },
       ],
-    })) as CategoryChannel;
+    });
+    await cat.setPosition(pos);
+  }
+  return cat;
 }
 
 /**
  * Retrieves all roles of the chosen type (eg. {@link RoleType.BUREAU})
  * @param guild the guild (discord server) where are located all the roles
  * @param roleType the role type to look for
- * @returns All the roles of the given type
+ * @returns All the roles of the given type (sorted by role position increasing)
  */
 function filterRolesByType(guild: Guild, roleType: RoleType) {
   switch (roleType) {
@@ -154,7 +174,7 @@ function findNextRolePosition(guild: Guild, asso: string, roleType: RoleType) {
   const roles = filterRolesByType(guild, roleType);
   if (roles.size) {
     let previousRole: Role | null;
-    for (const role of roles.clone().reverse()) {
+    for (const role of roles) {
       if (previousRole && role[1].name.localeCompare(previousRole.name) > 0)
         break; // We reached pinned roles (such as BDE or UNG, break here)
       previousRole = role[1]; // Add this role to check for pinned roles
@@ -171,16 +191,30 @@ function findNextRolePosition(guild: Guild, asso: string, roleType: RoleType) {
           0) + 1
       );
     case RoleType.MEMBRE:
-      (filterRolesByType(guild, RoleType.ANCIEN).first()?.position ??
-        guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE)?.position ??
-        0) + 1;
+      return (
+        (filterRolesByType(guild, RoleType.ANCIEN).last()?.position ??
+          guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE)
+            ?.position ??
+          0) + 1
+      );
+    case RoleType.EXTRA:
+      return (
+        (filterRolesByType(guild, RoleType.MEMBRE).last()?.position ??
+          filterRolesByType(guild, RoleType.ANCIEN).last()?.position ??
+          guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE)
+            ?.position ??
+          0) + 1
+      );
+    case RoleType.BUREAU:
+      return (
+        (filterRolesByType(guild, RoleType.EXTRA).last()?.position ??
+          filterRolesByType(guild, RoleType.MEMBRE).last()?.position ??
+          filterRolesByType(guild, RoleType.ANCIEN).last()?.position ??
+          guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE)
+            ?.position ??
+          0) + 1
+      );
   }
-  return (
-    (filterRolesByType(guild, RoleType.MEMBRE).first()?.position ??
-      filterRolesByType(guild, RoleType.ANCIEN).first()?.position ??
-      guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE)?.position ??
-      0) + 1
-  );
 }
 
 /**
@@ -337,7 +371,8 @@ export async function syncRoles() {
         for (const role of member.roles.cache)
           if (
             role[0] !== process.env.ASSO_GUILD_ID &&
-            role[0] !== process.env.MEMBRE_BUREAU_ASSO_ROLE
+            role[0] !== process.env.MEMBRE_BUREAU_ASSO_ROLE &&
+            role[0] !== process.env.ADEPTE_ROLE
           )
             if (!roles.find((r) => r.id === role[0]))
               await member.roles.remove(role);
@@ -349,7 +384,8 @@ export async function syncRoles() {
         else if (bureauMemberRole) await member.roles.remove(bureauMemberRole);
       } else {
         member.roles.cache.forEach((role) => {
-          if (role.editable) member.roles.remove(role);
+          if (role.editable && role.id !== process.env.ADEPTE_ROLE)
+            member.roles.remove(role);
         });
       }
     }

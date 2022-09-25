@@ -9,6 +9,7 @@ import {
 } from "discord.js";
 import { bot } from ".";
 import { fetchMembers } from "../etu";
+import logger from "../logger";
 
 const enum RoleType {
   BUREAU,
@@ -364,8 +365,8 @@ export async function syncRoles() {
               }
           }
         }
-        console.log(
-          discordTag,
+        logger.info(
+          `Synced user ${discordTag}`,
           roles.map((role) => role.name)
         );
         for (const role of member.roles.cache)

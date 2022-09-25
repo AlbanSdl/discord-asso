@@ -9,6 +9,7 @@ import { syncRoles } from "./sync";
 import { generateErrorMessage, generateFatalErrorMessage } from "./error";
 import { buildModal, toggleView } from "./access";
 import { updateToggleMessage, updateAdepteMessage } from "./messages";
+import logger from "../logger";
 
 export const bot = new Client({
   intents: ["Guilds", "GuildMembers"],
@@ -64,7 +65,7 @@ bot.on("interactionCreate", async (interaction) => {
         }
       } catch (error) {
         interaction.editReply(generateFatalErrorMessage());
-        console.error(error);
+        logger.error(error);
       }
     } else {
       await interaction.deferReply({
@@ -127,7 +128,9 @@ bot.on("error", async (error) => {
     !error.message.match(/Invalid WebSocket frame/i) &&
     !error.message.match(/ECONNRESET/i)
   )
-    console.log(error);
+    logger.error(error);
 });
 
 bot.login();
+
+export { syncRoles } from "./sync";

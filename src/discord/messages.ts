@@ -45,3 +45,36 @@ export async function updateToggleMessage(channel: TextChannel) {
     ],
   });
 }
+
+export async function updateAdepteMessage(channel: TextChannel) {
+  return channel.send({
+    embeds: [
+      {
+        title: "Rejoindre les adeptes de la salle asso",
+        fields: [
+          {
+            name: "Tu passes souvent en salle asso ? Ce rôle est fait pour toi !",
+            value:
+              "Que tu passes régulièrement en salle asso ou que tu restes h24 en salle asso pour taper ton meilleur master ~~SSI~~ associatif, ce rôle te permettra de communiquer facilement avec tous ceux qui vont en salle asso: *un sweat oublié, le planning du ménage, etc*",
+          },
+          {
+            name: "Obtenir le rôle",
+            value:
+              "T'es convaincu ? Clique sur le bouton pour obtenir le rôle ! *(Tu pourras cliquer à nouveau dessus pour l'enlever :confounded:)*",
+          },
+        ],
+        provider: {
+          name: "Bot réalisé par Vieuxthon#7503",
+        },
+      },
+    ],
+    components: [
+      new ActionRowBuilder<ButtonBuilder>().addComponents(
+        new ButtonBuilder()
+          .setCustomId("toggle-adepte")
+          .setStyle(ButtonStyle.Primary)
+          .setLabel("Rejoindre les Adeptes de la salle asso")
+      ),
+    ],
+  });
+}

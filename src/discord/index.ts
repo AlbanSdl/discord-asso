@@ -1,8 +1,14 @@
-import { ActivityType, Client, GuildMember, TextChannel } from "discord.js";
+import {
+  ActivityType,
+  Client,
+  GuildMember,
+  GuildMemberRoleManager,
+  TextChannel,
+} from "discord.js";
 import { syncRoles } from "./sync";
 import { generateErrorMessage, generateFatalErrorMessage } from "./error";
 import { buildModal, toggleView } from "./access";
-import { updateToggleMessage } from "./updateCommand";
+import { updateToggleMessage, updateAdepteMessage } from "./messages";
 
 export const bot = new Client({
   intents: ["Guilds", "GuildMembers"],
@@ -38,6 +44,13 @@ bot.on("interactionCreate", async (interaction) => {
             await updateToggleMessage(interaction.channel);
             interaction.editReply("Message envoyé");
             break;
+          case "adepte":
+            await interaction.deferReply({
+              ephemeral: true,
+            });
+            await updateAdepteMessage(interaction.channel);
+            interaction.editReply("Message envoyé");
+            break;
           default:
             await interaction.deferReply({
               ephemeral: true,
@@ -67,6 +80,25 @@ bot.on("interactionCreate", async (interaction) => {
   } else if (interaction.isButton()) {
     if (interaction.customId === "toggle-asso-popup") {
       interaction.showModal(buildModal());
+    } else if (interaction.customId === "toggle-adepte") {
+      await interaction.deferReply({
+        ephemeral: true,
+      });
+      if (
+        (interaction.member.roles as GuildMemberRoleManager).cache.has(
+          process.env.ADEPTE_ROLE
+        )
+      ) {
+        await (interaction.member.roles as GuildMemberRoleManager).remove(
+          process.env.ADEPTE_ROLE
+        );
+        interaction.editReply("Rôle enlevé");
+      } else {
+        (interaction.member.roles as GuildMemberRoleManager).add(
+          process.env.ADEPTE_ROLE
+        );
+        interaction.editReply("Rôle ajouté");
+      }
     }
   } else if (interaction.isModalSubmit()) {
     if (interaction.customId === "toggle-asso") {

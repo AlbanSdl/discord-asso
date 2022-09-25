@@ -21,7 +21,7 @@ Si un utilisateur du discord asso veut accéder aux channels publics d'une asso,
 ## Faire tourner le bot directement avec `yarn start`
 
 Il faut faut bien remplir les variables d'environnement. Ensuite exécuter `yarn build`. Si tu veux utiliser les slash commands, exécute `node build/command.js` pour enregistrer les commandes dans discord. Ensuite tu peux lancer le bot avec `yarn start`. \
-**La première variable d'environnement est nécessaire afin d'enregistrer les commandes dans discord !**
+**Les variables d'environnement `DISCORD_TOKEN` et `BOT_ID` sont nécessaires afin d'enregistrer les commandes dans discord !**
 
 ### TL;DR
 
@@ -33,3 +33,7 @@ yarn build
 node build/command.js
 yarn start
 ```
+
+### Docker
+
+Il faut utiliser les variables d'environnement `DISCORD_TOKEN` et `BOT_ID` pendant la build de l'image docker. Les variables du `.env` sont utilisées (à part la première) lors de l'exécution du programme.

@@ -16,6 +16,10 @@ COPY --chown=node:node ./ ./
 
 RUN yarn tsc
 
+# Register commands for discord
+RUN node build/command.js
+RUN rm build/command.js
+
 # Prunes devDependencies
 RUN yarn install --production --ignore-scripts --prefer-offline
 

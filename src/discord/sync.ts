@@ -14,14 +14,21 @@ const enum RoleType {
   BUREAU,
   MEMBRE,
   ANCIEN,
+  EXTRA,
 }
 
-function getRoleName(asso: string, roleType: RoleType) {
+function getRoleName<T extends RoleType>(
+  asso: string,
+  roleType: T,
+  ...extra: T extends RoleType.EXTRA ? [string] : []
+) {
   switch (roleType) {
     case RoleType.BUREAU:
       return `${asso} - Bureau`;
     case RoleType.ANCIEN:
       return `${asso} - Ancien`;
+    case RoleType.EXTRA:
+      return `${asso} - ${extra[0]}`;
     default:
       return asso;
   }
@@ -33,11 +40,19 @@ function getRoleColor(roleType: RoleType) {
       return process.env.ROLE_BUREAU_COLOR;
     case RoleType.ANCIEN:
       return process.env.ROLE_ANCIEN_COLOR;
-    default:
+    case RoleType.MEMBRE:
       return process.env.ROLE_MEMBRE_COLOR;
+    default:
+      return process.env.ROLE_EXTRA_COLOR;
   }
 }
 
+/**
+ * Retrieves (and creates if it doesn't exist) the category of the association
+ * @param guild the guild to use for channel discovery
+ * @param asso the name of the association
+ * @returns The category of the association
+ */
 export async function findAssoCategory(guild: Guild, asso: string) {
   return (guild.channels.cache.find(
     (channel) =>
@@ -64,83 +79,130 @@ export async function findAssoCategory(guild: Guild, asso: string) {
     })) as CategoryChannel;
 }
 
+/**
+ * Retrieves all roles of the chosen type (eg. {@link RoleType.BUREAU})
+ * @param guild the guild (discord server) where are located all the roles
+ * @param roleType the role type to look for
+ * @returns All the roles of the given type
+ */
 function filterRolesByType(guild: Guild, roleType: RoleType) {
   switch (roleType) {
-    case RoleType.ANCIEN:
-      return guild.roles.cache
-        .filter(
-          (role) =>
-            role.name.endsWith("Ancien") &&
-            !role.managed &&
-            role.id !== process.env.ASSO_GUILD_ID &&
-            role.id !== process.env.MEMBRE_BUREAU_ASSO_ROLE
-        )
-        .sort((role1, role2) => role1.position - role2.position);
     case RoleType.BUREAU:
       return guild.roles.cache
-        .filter(
-          (role) =>
-            role.name.endsWith("Bureau") &&
-            !role.managed &&
-            role.id !== process.env.ASSO_GUILD_ID &&
-            role.id !== process.env.MEMBRE_BUREAU_ASSO_ROLE
-        )
+        .filter((role) => role.name.endsWith("- Bureau"))
         .sort((role1, role2) => role1.position - role2.position);
-    default:
+    case RoleType.EXTRA:
+      return guild.roles.cache
+        .filter((role) => /\s-\s(?!(?:Bureau|Ancien)$)/.test(role.name))
+        .sort((role1, role2) => role1.position - role2.position);
+    case RoleType.ANCIEN:
+      return guild.roles.cache
+        .filter((role) => role.name.endsWith("- Ancien"))
+        .sort((role1, role2) => role1.position - role2.position);
+    case RoleType.MEMBRE:
+      // Retrieve position of last `Extra` role (or last `Bureau` role if there is no `Extra` role)
+      const positionTop: number =
+        filterRolesByType(guild, RoleType.EXTRA).reduce<Role>(
+          (acc, role) =>
+            acc instanceof Role
+              ? acc.position > role.position
+                ? role
+                : acc
+              : role,
+          null
+        )?.position ??
+        filterRolesByType(guild, RoleType.BUREAU).reduce<Role>(
+          (acc, role) =>
+            acc instanceof Role
+              ? acc.position > role.position
+                ? role
+                : acc
+              : role,
+          null
+        )?.position ??
+        guild.roles.cache.get(process.env.BOT_ROLE).position!;
+      // Retrieve the position of the first `Ancien` role
+      const positionBottom: number =
+        filterRolesByType(guild, RoleType.ANCIEN).reduce<Role>(
+          (acc, role) =>
+            acc instanceof Role
+              ? acc.position > role.position
+                ? role
+                : acc
+              : role,
+          null
+        )?.position ??
+        guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE).position!;
+      // Retrieve all roles between these two positions
       return guild.roles.cache
         .filter(
           (role) =>
-            !role.name.endsWith("Ancien") &&
-            !role.name.endsWith("Bureau") &&
-            !role.managed &&
-            role.id !== process.env.ASSO_GUILD_ID &&
-            role.id !== process.env.MEMBRE_BUREAU_ASSO_ROLE
+            role.position < positionTop && role.position > positionBottom
         )
         .sort((role1, role2) => role1.position - role2.position);
   }
 }
 
+/**
+ * Retrieves the role position where a role should be inserted
+ * @param guild the guild where to create the role
+ * @param asso the asso name for the role
+ * @param roleType the type of membership for the role
+ * @returns the position where the role should be created
+ */
 function findNextRolePosition(guild: Guild, asso: string, roleType: RoleType) {
   const roles = filterRolesByType(guild, roleType);
   if (roles.size) {
-    const sortedRoles = roles.sort((role1, role2) =>
-      role1.name.localeCompare(role2.name)
-    );
-    for (const role of sortedRoles) {
-      if (role[1].name > asso) return role[1].position + 1;
+    let previousRole: Role | null;
+    for (const role of roles.clone().reverse()) {
+      if (previousRole && role[1].name.localeCompare(previousRole.name) > 0)
+        break; // We reached pinned roles (such as BDE or UNG, break here)
+      previousRole = role[1]; // Add this role to check for pinned roles
+      if (role[1].name.localeCompare(asso) < 0) return role[1].position; // We should be there
     }
-    return sortedRoles.last()!.position;
+    return previousRole.position + 1; // Use position right before pinned roles
   }
 
   // Find where the first role should be located
-  if (roleType === RoleType.ANCIEN)
-    return (
-      (guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE as string)
-        ?.position ?? 0) + 1
-    );
-  if (roleType === RoleType.MEMBRE)
-    return (
-      (filterRolesByType(guild, RoleType.ANCIEN).last()?.position ??
-        guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE as string)
-          ?.position ??
-        0) + 1
-    );
+  switch (roleType) {
+    case RoleType.ANCIEN:
+      return (
+        (guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE)?.position ??
+          0) + 1
+      );
+    case RoleType.MEMBRE:
+      (filterRolesByType(guild, RoleType.ANCIEN).first()?.position ??
+        guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE)?.position ??
+        0) + 1;
+  }
   return (
-    (filterRolesByType(guild, RoleType.MEMBRE).last()?.position ??
-      filterRolesByType(guild, RoleType.ANCIEN).last()?.position ??
-      guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE as string)
-        ?.position ??
+    (filterRolesByType(guild, RoleType.MEMBRE).first()?.position ??
+      filterRolesByType(guild, RoleType.ANCIEN).first()?.position ??
+      guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE)?.position ??
       0) + 1
   );
 }
 
-async function findAssoRole(guild: Guild, asso: string, roleType: RoleType) {
+/**
+ * Retrieves (and creates if it doesn't exist) the role for a group in the given association
+ * @param guild the guild in which the role should be looked for
+ * @param asso the name of association this role belongs to
+ * @param roleType the type of the role. {@link RoleType See RoleTypes.}
+ * @param extra the name of the role (only if of the {@link RoleType.EXTRA EXTRA RoleType})
+ * @returns the role used for this group of the association
+ */
+async function findAssoRole<T extends RoleType>(
+  guild: Guild,
+  asso: string,
+  roleType: T,
+  ...extra: T extends RoleType.EXTRA ? [string] : []
+) {
   return (
     guild.roles.cache.find(
-      (role) => role.name === getRoleName(asso, roleType)
+      (role) => role.name === getRoleName(asso, roleType, ...extra)
     ) ??
     (await guild.roles.create({
-      name: getRoleName(asso, roleType),
+      name: getRoleName(asso, roleType, ...extra),
       mentionable: true,
       color: Number(`0x${getRoleColor(roleType)}`),
       hoist: roleType === RoleType.BUREAU,
@@ -149,6 +211,9 @@ async function findAssoRole(guild: Guild, asso: string, roleType: RoleType) {
   );
 }
 
+/**
+ * Executes the synchronization between EtuUTT and the discord server
+ */
 export async function syncRoles() {
   const assoMembers = await fetchMembers();
   const guild = bot.guilds.resolve(process.env.ASSO_GUILD_ID as string);
@@ -163,6 +228,8 @@ export async function syncRoles() {
       })
     );
   } while (members.size < guild.memberCount);
+
+  const extraRoles = process.env.EXTRA_ROLES.split(/[,;\s]/);
 
   for (const [_, member] of members) {
     if (!member.user.bot) {
@@ -219,23 +286,48 @@ export async function syncRoles() {
               );
               isInBureau = true;
             default:
-              const memberRole = await findAssoRole(
-                guild,
-                asso,
-                RoleType.MEMBRE
-              );
-              roles.push(memberRole);
-              // Create channels if they don't exist
-              const assoCategory = await findAssoCategory(guild, asso);
-              if (!assoCategory.permissionsFor(memberRole).has("ViewChannel")) {
-                assoCategory.permissionOverwrites.edit(memberRole, {
-                  ViewChannel: true,
-                });
+              if (extraRoles.includes(`${asso}-${assoMember[asso]}`)) {
+                const extraRole = await findAssoRole(
+                  guild,
+                  asso,
+                  RoleType.EXTRA,
+                  assoMember[asso]
+                );
+                roles.push(extraRole);
+                // Create channels if they don't exist
+                const assoCategory = await findAssoCategory(guild, asso);
+                if (
+                  !assoCategory.permissionsFor(extraRole).has("ViewChannel")
+                ) {
+                  assoCategory.permissionOverwrites.edit(extraRole, {
+                    ViewChannel: true,
+                  });
+                }
+                await member.roles.add(
+                  extraRole,
+                  "Synchronisation des rôles (via site étu)"
+                );
+              } else {
+                const memberRole = await findAssoRole(
+                  guild,
+                  asso,
+                  RoleType.MEMBRE
+                );
+                roles.push(memberRole);
+                // Create channels if they don't exist
+                const assoCategory = await findAssoCategory(guild, asso);
+                if (
+                  !assoCategory.permissionsFor(memberRole).has("ViewChannel")
+                ) {
+                  assoCategory.permissionOverwrites.edit(memberRole, {
+                    ViewChannel: true,
+                  });
+                }
+                await member.roles.add(
+                  memberRole,
+                  "Synchronisation des rôles (via site étu)"
+                );
               }
-              await member.roles.add(
-                memberRole,
-                "Synchronisation des rôles (via site étu)"
-              );
           }
         }
         console.log(

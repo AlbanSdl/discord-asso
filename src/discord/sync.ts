@@ -371,10 +371,11 @@ export async function syncRoles() {
         );
         for (const role of member.roles.cache)
           if (
-            role[0] !== process.env.ASSO_GUILD_ID &&
-            role[0] !== process.env.MEMBRE_BUREAU_ASSO_ROLE &&
-            role[0] !== process.env.ADEPTE_ROLE &&
-            role[0] !== member.guild.id
+            role[1].position <
+              guild.roles.cache.get(process.env.BOT_ROLE).position &&
+            role[1].position >
+              guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE)
+                .position
           )
             if (!roles.find((r) => r.id === role[0]))
               await member.roles.remove(role[0]);
@@ -388,12 +389,16 @@ export async function syncRoles() {
         member.roles.cache.forEach((role) => {
           if (
             role.editable &&
-            role.id !== process.env.ADEPTE_ROLE &&
-            role.id !== member.guild.id
+            role.position <
+              guild.roles.cache.get(process.env.BOT_ROLE).position &&
+            role.position >=
+              guild.roles.cache.get(process.env.MEMBRE_BUREAU_ASSO_ROLE)
+                .position
           )
             member.roles.remove(role);
         });
       }
     }
   }
+  logger.info("Sync ended !");
 }

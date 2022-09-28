@@ -373,10 +373,11 @@ export async function syncRoles() {
           if (
             role[0] !== process.env.ASSO_GUILD_ID &&
             role[0] !== process.env.MEMBRE_BUREAU_ASSO_ROLE &&
-            role[0] !== process.env.ADEPTE_ROLE
+            role[0] !== process.env.ADEPTE_ROLE &&
+            role[0] !== member.guild.id
           )
             if (!roles.find((r) => r.id === role[0]))
-              await member.roles.remove(role);
+              await member.roles.remove(role[0]);
         const bureauMemberRole = guild.roles.cache.get(
           process.env.MEMBRE_BUREAU_ASSO_ROLE as string
         );
@@ -385,7 +386,11 @@ export async function syncRoles() {
         else if (bureauMemberRole) await member.roles.remove(bureauMemberRole);
       } else {
         member.roles.cache.forEach((role) => {
-          if (role.editable && role.id !== process.env.ADEPTE_ROLE)
+          if (
+            role.editable &&
+            role.id !== process.env.ADEPTE_ROLE &&
+            role.id !== member.guild.id
+          )
             member.roles.remove(role);
         });
       }

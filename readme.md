@@ -10,7 +10,7 @@ Le rôle _@Adepte de la salle asso_ est toujours présent. Pour permettre à des
 ## Attribution auto des rôles
 
 Attribue les rôles aux membres des assos : bureau (nécessite que l'utilisateur soit dans le groupe "Bureau"), ancien (l'utilisateur doit être dans le groupe "Anciens") ou membre (dans les autres cas).
-Certains rôles spéciaux sont attribués à certaines conditions (rôles apraissant sous le format `assoId-group` _- eg. ung-SIA -_ dans les variables d'environnement, séparés par un espace, `;` ou `,`)
+Certains rôles spéciaux sont attribués à certaines conditions (rôles apraissant sous le format `assoId-group` _- eg. ung-SIA -_ dans les variables d'environnement, séparés `;` ou `,`)
 
 Chaque association contrôle alors une catégorie et obtient plusieurs rôles. Tous les rôles et catégories sont triées par ordre alphabétique, cependant pour les rôles bureau et les catégories, il est possible de les "épingler" en les déplaçant vers le haut. _(nb: "épingler" signifie qu'aucun nouveau channel ou rôle n'ira s'insérer au dessus)_
 

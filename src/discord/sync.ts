@@ -240,7 +240,7 @@ async function findAssoRole<T extends RoleType>(
       name: getRoleName(asso, roleType, ...extra),
       mentionable: true,
       color: Number(`0x${getRoleColor(roleType)}`),
-      hoist: roleType === RoleType.BUREAU,
+      hoist: roleType === RoleType.BUREAU || roleType === RoleType.EXTRA,
       position: findNextRolePosition(guild, asso, roleType),
     }))
   );
@@ -264,7 +264,7 @@ export async function syncRoles() {
     );
   } while (members.size < guild.memberCount);
 
-  const extraRoles = process.env.EXTRA_ROLES.split(/[,;\s]/);
+  const extraRoles = process.env.EXTRA_ROLES.split(/[,;]/);
 
   for (const [_, member] of members) {
     if (!member.user.bot) {

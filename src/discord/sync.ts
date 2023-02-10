@@ -286,10 +286,15 @@ export async function syncRoles() {
               // Create channels if they don't exist
               const ancien_category = await findAssoCategory(guild, asso);
               if (
-                !ancien_category.permissionsFor(ancienRole).has("ViewChannel")
+                !ancien_category
+                  .permissionsFor(ancienRole)
+                  .has("ViewChannel") ||
+                !ancien_category.permissionsFor(ancienRole).has("Connect")
               ) {
                 ancien_category.permissionOverwrites.edit(ancienRole, {
                   ViewChannel: true,
+                  Connect: true,
+                  Stream: true,
                 });
               }
               await member.roles.add(
@@ -306,13 +311,18 @@ export async function syncRoles() {
               roles.push(bureauRole);
               // Create channels if they don't exist
               const category = await findAssoCategory(guild, asso);
-              if (!category.permissionsFor(bureauRole).has("ViewChannel")) {
+              if (
+                !category.permissionsFor(bureauRole).has("ViewChannel") ||
+                !category.permissionsFor(bureauRole).has("Connect")
+              ) {
                 category.permissionOverwrites.edit(bureauRole, {
                   ManageChannels: true,
                   ManageMessages: true,
                   ManageThreads: true,
                   ViewChannel: true,
                   ManageRoles: true,
+                  Connect: true,
+                  Stream: true,
                 });
               }
               await member.roles.add(
@@ -332,10 +342,13 @@ export async function syncRoles() {
                 // Create channels if they don't exist
                 const assoCategory = await findAssoCategory(guild, asso);
                 if (
-                  !assoCategory.permissionsFor(extraRole).has("ViewChannel")
+                  !assoCategory.permissionsFor(extraRole).has("ViewChannel") ||
+                  !assoCategory.permissionsFor(extraRole).has("Connect")
                 ) {
                   assoCategory.permissionOverwrites.edit(extraRole, {
                     ViewChannel: true,
+                    Connect: true,
+                    Stream: true,
                   });
                 }
                 await member.roles.add(
@@ -352,10 +365,13 @@ export async function syncRoles() {
                 // Create channels if they don't exist
                 const assoCategory = await findAssoCategory(guild, asso);
                 if (
-                  !assoCategory.permissionsFor(memberRole).has("ViewChannel")
+                  !assoCategory.permissionsFor(memberRole).has("ViewChannel") ||
+                  !assoCategory.permissionsFor(memberRole).has("Connect")
                 ) {
                   assoCategory.permissionOverwrites.edit(memberRole, {
                     ViewChannel: true,
+                    Connect: true,
+                    Stream: true,
                   });
                 }
                 await member.roles.add(

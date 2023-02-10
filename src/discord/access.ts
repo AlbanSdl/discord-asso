@@ -34,6 +34,8 @@ export async function toggleView(member: GuildMember, assoId: string) {
     } else {
       await category.permissionOverwrites.edit(member, {
         ViewChannel: true,
+        Connect: true,
+        Stream: true,
       });
       return {
         event: "joined",

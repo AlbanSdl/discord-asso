@@ -1,4 +1,4 @@
-import { MessageOptions } from "discord.js";
+import { InteractionEditReplyOptions, MessagePayload } from "discord.js";
 
 const errorRandomMessages = [
   "Ce bot a bien été codé avec le Q",
@@ -8,7 +8,9 @@ const errorRandomMessages = [
   "UNG, fournisseur de logiciels de qualité depuis 1998",
 ];
 
-export function generateFatalErrorMessage(): MessageOptions {
+export function generateFatalErrorMessage():
+  | MessagePayload
+  | InteractionEditReplyOptions {
   return generateErrorMessage(
     "Une erreur est survenue !",
     `*${
@@ -22,7 +24,7 @@ export function generateFatalErrorMessage(): MessageOptions {
 export function generateErrorMessage(
   title: string,
   content: string
-): MessageOptions {
+): MessagePayload | InteractionEditReplyOptions {
   return {
     embeds: [
       {

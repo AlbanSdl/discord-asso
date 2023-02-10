@@ -3,7 +3,8 @@
     "module": "Node16",
     "target": "ESNext",
     "moduleResolution": "Node",
-    "outDir": "build"
+    "outDir": "build",
+    "skipLibCheck": true
   },
   "include": ["src/**/*"]
 }

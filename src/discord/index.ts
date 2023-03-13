@@ -8,7 +8,11 @@ import {
 import { syncRoles } from "./sync";
 import { generateErrorMessage, generateFatalErrorMessage } from "./error";
 import { buildModal, toggleView } from "./access";
-import { updateToggleMessage, updateAdepteMessage } from "./messages";
+import {
+  updateToggleMessage,
+  updateAdepteMessage,
+  createRoleMessage,
+} from "./messages";
 import logger from "../logger";
 
 export const bot = new Client({
@@ -52,6 +56,18 @@ bot.on("interactionCreate", async (interaction) => {
             await updateAdepteMessage(interaction.channel);
             interaction.editReply("Message envoyé");
             break;
+          case "enroll":
+            await interaction.deferReply({
+              ephemeral: true,
+            });
+            await createRoleMessage({
+              channel: interaction.channel,
+              role: interaction.options.getRole("role")?.id,
+              title: interaction.options.getString("title"),
+              descriptionString: interaction.options.getString("description"),
+            });
+            interaction.editReply("Message envoyé");
+            break;
           default:
             await interaction.deferReply({
               ephemeral: true,
@@ -81,7 +97,7 @@ bot.on("interactionCreate", async (interaction) => {
   } else if (interaction.isButton()) {
     if (interaction.customId === "toggle-asso-popup") {
       interaction.showModal(buildModal());
-    } else if (interaction.customId === "toggle-adepte") {
+    } else if (interaction.customId === "toggle-role-adepte") {
       await interaction.deferReply({
         ephemeral: true,
       });
@@ -99,6 +115,29 @@ bot.on("interactionCreate", async (interaction) => {
           process.env.ADEPTE_ROLE
         );
         interaction.editReply("Rôle ajouté");
+      }
+    } else if (interaction.customId.startsWith("toggle-role-")) {
+      await interaction.deferReply({
+        ephemeral: true,
+      });
+      const roleId = interaction.customId.slice(12);
+      const role = await interaction.guild.roles.fetch(roleId);
+      if (role != null) {
+        if (
+          (interaction.member.roles as GuildMemberRoleManager).cache.has(
+            role.id
+          )
+        ) {
+          await (interaction.member.roles as GuildMemberRoleManager).remove(
+            role
+          );
+          interaction.editReply("Rôle enlevé");
+        } else {
+          (interaction.member.roles as GuildMemberRoleManager).add(role);
+          interaction.editReply("Rôle ajouté");
+        }
+      } else {
+        interaction.editReply("Impossible de t'assigner le rôle !");
       }
     }
   } else if (interaction.isModalSubmit()) {

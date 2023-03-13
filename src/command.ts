@@ -27,6 +27,29 @@ const commands = [
     )
     .setDMPermission(false)
     .setDefaultMemberPermissions(0x8),
+  new SlashCommandBuilder()
+    .setName("enroll")
+    .setDescription("Crée un message pour assigner des rôles")
+    .setDMPermission(false)
+    .setDefaultMemberPermissions(0x8)
+    .addRoleOption((role) =>
+      role
+        .setName("role")
+        .setDescription("Le rôle à assigner avec ce message")
+        .setRequired(true)
+    )
+    .addStringOption((title) =>
+      title
+        .setName("title")
+        .setDescription("Le titre affiché dans le message")
+        .setRequired(true)
+    )
+    .addStringOption((description) =>
+      description
+        .setName("description")
+        .setDescription("La description affichée dans le message")
+        .setRequired(false)
+    ),
 ].map((command) => command.toJSON());
 
 // Register Commands

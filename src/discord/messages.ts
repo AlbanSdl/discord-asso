@@ -3,6 +3,8 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  Snowflake,
+  APIEmbedField,
 } from "discord.js";
 
 export async function updateToggleMessage(channel: TextChannel) {
@@ -47,16 +49,34 @@ export async function updateToggleMessage(channel: TextChannel) {
 }
 
 export async function updateAdepteMessage(channel: TextChannel) {
-  return channel.send({
+  return createRoleMessage({
+    role: "adepte",
+    title: "Rejoindre les adeptes de la salle asso",
+    description: [
+      {
+        name: "Tu passes souvent en salle asso ? Ce rôle est fait pour toi !",
+        value:
+          "Que tu passes régulièrement en salle asso ou que tu restes h24 en salle asso pour taper ton meilleur master ~~SSI~~ associatif, ce rôle te permettra de communiquer facilement avec tous ceux qui vont en salle asso: *un sweat oublié, le planning du ménage, etc*",
+      },
+    ],
+    channel,
+  });
+}
+
+export async function createRoleMessage(options: {
+  role: Snowflake;
+  channel: TextChannel;
+  title: string;
+  descriptionString?: string;
+  description?: APIEmbedField[];
+}) {
+  return options.channel.send({
     embeds: [
       {
-        title: "Rejoindre les adeptes de la salle asso",
+        title: options.title,
+        description: options.descriptionString,
         fields: [
-          {
-            name: "Tu passes souvent en salle asso ? Ce rôle est fait pour toi !",
-            value:
-              "Que tu passes régulièrement en salle asso ou que tu restes h24 en salle asso pour taper ton meilleur master ~~SSI~~ associatif, ce rôle te permettra de communiquer facilement avec tous ceux qui vont en salle asso: *un sweat oublié, le planning du ménage, etc*",
-          },
+          ...(options.description ?? []),
           {
             name: "Obtenir le rôle",
             value:
@@ -71,9 +91,9 @@ export async function updateAdepteMessage(channel: TextChannel) {
     components: [
       new ActionRowBuilder<ButtonBuilder>().addComponents(
         new ButtonBuilder()
-          .setCustomId("toggle-adepte")
+          .setCustomId(`toggle-role-${options.role}`)
           .setStyle(ButtonStyle.Primary)
-          .setLabel("Rejoindre les Adeptes de la salle asso")
+          .setLabel("Obtenir le rôle")
       ),
     ],
   });

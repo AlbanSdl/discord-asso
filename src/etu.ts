@@ -127,8 +127,7 @@ async function fetchAssoMembers(): Promise<EtuUTTOrgaWithMembers[]> {
 }
 
 /**
- * Retrieves the assos of discord users. Filters out users who don't want to join the discord server
- * (according to the EtuUTT profile preference).
+ * Retrieves the assos of discord users
  * @returns {Promise<AssoMembers>} List of all discord tags and their associated assos
  */
 export async function fetchMembers(): Promise<AssoMembers> {
@@ -137,7 +136,7 @@ export async function fetchMembers(): Promise<AssoMembers> {
 
   for (const asso of assos) {
     for (const member of asso.members) {
-      if (member.discordTag && member.wantsJoinUTTDiscord) {
+      if (member.discordTag) {
         if (!members[member.discordTag]) members[member.discordTag] = {};
         members[member.discordTag][asso.name] = member.group.name;
       }

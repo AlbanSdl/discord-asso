@@ -268,7 +268,10 @@ export async function syncRoles() {
 
   for (const [_, member] of members) {
     if (!member.user.bot) {
-      const discordTag = `${member.user.username}#${member.user.discriminator}`;
+      const discordTag =
+        member.user.discriminator === "0"
+          ? member.user.username
+          : `${member.user.username}#${member.user.discriminator}`;
       const roles: Role[] = [];
       let isInBureau = false;
       if (discordTag in assoMembers) {
